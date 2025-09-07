@@ -19,11 +19,22 @@ const normalizePhone = require("./utils/normalisePhone");
 const app = express();
 const server = http.createServer(app);
 
-// Middleware
-app.use(cors({ origin:[
-   "http://localhost:5173 ",
-   "https://real-estate-market-place-iota.vercel.app/"],
-    credentials: true }));
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://real-estate-market-place-iota.vercel.app"
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
+
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
