@@ -20,7 +20,10 @@ const app = express();
 const server = http.createServer(app);
 
 // Middleware
-app.use(cors({ origin: "http://localhost:5173", credentials: true }));
+app.use(cors({ origin:
+   "http://localhost:5173 ||https://real-estate-market-place-iota.vercel.app/",
+    credentials: true }));
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
