@@ -1,4 +1,5 @@
-// index.js
+const dns = require ("dns");
+dns.setServers(["8.8.8.8", "1.1.1.1"])
 require("dotenv").config();
 const express = require("express");
 const http = require("http");
@@ -19,22 +20,42 @@ const normalizePhone = require("./utils/normalisePhone");
 const app = express();
 const server = http.createServer(app);
 
+// Middleware
+
+// const allowedOrigins = [
+//   "http://localhost:5173",
+//   "https://real-estate-market-place-iota.vercel.app"
+// ];
+
+// app.use(cors({
+//   origin: (origin, callback) => {
+//     if (!origin || allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error("Not allowed by CORS"));
+//     }
+//   },
+//   credentials: true
+// }));
+
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://real-estate-market-place-iota.vercel.app"
+  "https://real-estate-market-place-iota.vercel.app",
+  "https://realestate-market-place-535z.vercel.app" 
 ];
-
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true
-}));
-
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.error("❌ Blocked by CORS:", origin);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
