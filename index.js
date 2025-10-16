@@ -46,7 +46,7 @@ app.use(
 const allowedOrigins = [
   "http://localhost:5173",
   "https://real-estate-market-place-iota.vercel.app",
-  "https://realestate-market-place-535z.vercel.app" 
+  "https://real-estate-market-place-xi.vercel.app" 
 ];
 app.use(
   cors({
