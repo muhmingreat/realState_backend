@@ -1,3 +1,4 @@
+const helmet = require("helmet");
 const dns = require ("dns");
 dns.setServers(["8.8.8.8", "1.1.1.1"])
 require("dotenv").config();
@@ -7,12 +8,13 @@ const { Server } = require("socket.io");
 const path = require("path");
 const cors = require("cors");
 const bodyParser = require("body-parser");
+const replicateRoutes = require("./routes/replicateRoute.js");
+const uploadRoutes = require ("./routes/uploadRoutes.js");
 const connectDB = require("./config");
-
 const kycRoutes = require("./routes/kycRoutes");
 const geocodeRoutes = require("./routes/geocodeRoute");
 const messageRoutes = require("./routes/messageRoutes");
-const { paymentController } = require("./controllers/paymentController");
+const { eventController } = require("./controllers/eventController");
 const KYCRequest = require("./models/KYCRequest");
 const Message = require("./models/Message");
 const normalizePhone = require("./utils/normalisePhone");
@@ -22,21 +24,24 @@ const server = http.createServer(app);
 
 // Middleware
 
-// const allowedOrigins = [
-//   "http://localhost:5173",
-//   "https://real-estate-market-place-iota.vercel.app"
-// ];
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      useDefaults: false, 
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        fontSrc: ["'self'", "data:"],
+        imgSrc: ["'self'", "data:", "blob:"],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        frameSrc: ["'self'"],
+      },
+    },
+  })
+);
 
-// app.use(cors({
-//   origin: (origin, callback) => {
-//     if (!origin || allowedOrigins.includes(origin)) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error("Not allowed by CORS"));
-//     }
-//   },
-//   credentials: true
-// }));
 
 const allowedOrigins = [
   "http://localhost:5173",
@@ -61,14 +66,22 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Static file serving
+
+
+
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/tmp_uploads", express.static(path.join(process.cwd(), "tmp_uploads")));
+app.use("/docs", express.static(path.join(process.cwd(), "docs")));
 
 // Routes
 app.use("/api/kyc", kycRoutes);
 app.use("/api/geocode", geocodeRoutes);
 app.use("/api/messages", messageRoutes);
-paymentController();
+app.use("/api/replicate", replicateRoutes);
+app.use("/api/upload", uploadRoutes);
+// app.use("/api/verify", verifyRoutes);
+
+eventController();
 
 // --- Start Server ---
 const startServer = async () => {
@@ -109,8 +122,6 @@ const startServer = async () => {
             return console.error("❌ Missing senderWallet, receiverWallet, or message");
           }
 
-          // 🔍 Lookup sender + receiver (by walletAddress OR email)
-          // 🔍 Lookup sender + receiver (walletAddress, email, or phoneNumber)
           const [senderUser, receiverUser] = await Promise.all([
             KYCRequest.findOne({
               $or: [
@@ -190,7 +201,3 @@ const startServer = async () => {
 };
 
 startServer();
-
-
-
-

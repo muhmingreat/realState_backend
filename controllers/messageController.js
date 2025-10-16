@@ -6,9 +6,13 @@ const KYCRequest = require("../models/KYCRequest");
 exports.sendMessage = async (req, res) => {
   try {
     const { senderWallet, receiverWallet, message, room } = req.body;
+        console.log("📩 sendMessage called:", { senderWallet, receiverWallet, message, room });
 
     // Find sender
     const sender = await KYCRequest.findOne({ walletAddress: senderWallet });
+
+    console.log("🔍 Sender:", sender?.walletAddress);
+    console.log("🔍 Receiver:", receiver?.walletAddress);
     if (!sender) {
       return res.status(400).json({ success: false, error: "Sender not found in KYC" });
     }
@@ -30,15 +34,14 @@ exports.sendMessage = async (req, res) => {
       message,
       room,
     });
-const msg = await Message.findById("68bac0985a1fbf47b0700f01");
-console.log(msg.sender, msg.receiver);
+console.log("✅ Message saved with id:", newMessage._id);
 
     await newMessage.save();
 
     const populatedMessage = await newMessage
       .populate("sender", "fullName walletAddress email")
       .populate("receiver", "fullName walletAddress email");
-
+  console.log("📦 Populated Message:", populatedMessage);
     res.status(201).json({ success: true, data: populatedMessage });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });

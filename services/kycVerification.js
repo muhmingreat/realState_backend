@@ -1,4 +1,5 @@
-const { RekognitionClient, CompareFacesCommand, DetectTextCommand } = require("@aws-sdk/client-rekognition");
+const { RekognitionClient, CompareFacesCommand, DetectTextCommand } = 
+require("@aws-sdk/client-rekognition");
 
 /**
  * Create Rekognition client with credentials + region

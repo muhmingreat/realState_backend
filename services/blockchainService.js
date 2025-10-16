@@ -2,7 +2,7 @@
 const { ethers } = require("ethers");
 require("dotenv").config();
 
-const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
+const provider = new ethers.JsonRpcProvider(process.env.ALCHEMY_RPC_URL);
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 const kycAbi = require("../abis/KYCVerifier.json");
 

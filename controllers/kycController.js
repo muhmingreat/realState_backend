@@ -50,7 +50,8 @@ exports.uploadKYC = [
 
       if (!rawWallet || !fullName || !email || !phoneNumber || !documentType) {
         if (req.files) Object.values(req.files).flat().forEach(f => safeUnlink(f.path));
-        return res.status(400).json({ error: "walletAddress, fullName, email, phoneNumber, and documentType are required" });
+        return res.status(400).json({ error: 
+          "walletAddress, fullName, email, phoneNumber, and documentType are required" });
       }
 
       const walletAddress = rawWallet.toLowerCase();
@@ -58,7 +59,7 @@ exports.uploadKYC = [
       // Helper function inside handler
       function normalizePhoneNumber(phone) {
         if (!phone || typeof phone !== "string") return "";
-        phone = phone.replace(/\D/g, ""); // remove non-numeric characters
+        phone = phone.replace(/\D/g, ""); 
         if (phone.startsWith("0")) phone = "234" + phone.slice(1);
         if (!phone.startsWith("234")) phone = "234" + phone;
         return "+" + phone;
@@ -73,7 +74,7 @@ exports.uploadKYC = [
         return res.status(400).json({ error: "Existing pending KYC request found" });
       }
 
-      // Read files
+      
       const idBuffer = fs.readFileSync(req.files.document[0].path);
       const selfieBuffer = req.files.selfie ? fs.readFileSync(req.files.selfie[0].path) : null;
 
@@ -100,12 +101,14 @@ exports.uploadKYC = [
 
       // Save request
       const newRequest = existing
-        ? Object.assign(existing, { fullName, email, phoneNumber: phoneNumberNormalized, documentType, documentUrl, selfieUrl, status: "pending" })
-        : new KYCRequest({ walletAddress, fullName, email, phoneNumber: phoneNumberNormalized, documentType, documentUrl, selfieUrl });
+        ? Object.assign(existing, { fullName, email, phoneNumber: 
+          phoneNumberNormalized, documentType, documentUrl, selfieUrl, status: "pending" })
+        : new KYCRequest({ walletAddress, fullName, email, phoneNumber: 
+          phoneNumberNormalized, documentType, documentUrl, selfieUrl });
 
       await newRequest.save();
 
-      // Save verification result
+    
       let verification = await KYCVerification.findOne({ requestId: newRequest._id });
       if (!verification) {
         verification = new KYCVerification({
@@ -138,113 +141,6 @@ exports.uploadKYC = [
 ];
 
 
-// exports.uploadKYC = [
-//   upload.fields([
-//     { name: "document", maxCount: 1 },
-//     { name: "selfie", maxCount: 1 },
-//   ]),
-
-//   function normalizePhoneNumber(phone) {
-//   if (!phone) return "";
-//   phone = phone.replace(/\D/g, ""); // remove non-numeric characters
-//   if (phone.startsWith("0")) phone = "234" + phone.slice(1); // 0814 → 234814
-//   if (!phone.startsWith("234")) phone = "234" + phone;       // ensure country code
-//   return "+" + phone;                                        // +234...
-// },
-
-//   async (req, res) => {
-//     try {
-//       const { walletAddress: rawWallet, fullName, email, phoneNumber, documentType } = req.body;
-
-//       if (!rawWallet || !fullName || !email || !phoneNumber || !documentType) {
-//         if (req.files) Object.values(req.files).flat().forEach(f => safeUnlink(f.path));
-//         return res.status(400).json({ error: "walletAddress, fullName, email, phoneNumber, and documentType are required" });
-//       }
-
-//       const walletAddress = rawWallet.toLowerCase();
-
-//       // Check duplicate
-//       const existing = await KYCRequest.findOne({ walletAddress });
-//       if (existing && existing.status === "pending") {
-//         Object.values(req.files).flat().forEach(f => safeUnlink(f.path));
-//         return res.status(400).json({ error: "Existing pending KYC request found" });
-//       }
-     
-//       // 🟢 Read buffers FIRST (before storeFile deletes files)
-//       const idBuffer = fs.readFileSync(req.files.document[0].path);
-//       const selfieBuffer = req.files.selfie
-//         ? fs.readFileSync(req.files.selfie[0].path)
-//         : null;
-
-//       // Then upload to storage (storeFile will delete tmp file)
-//       const documentUrl = await storeFile(req.files.document[0].path);
-//       const selfieUrl = req.files.selfie
-//         ? await storeFile(req.files.selfie[0].path)
-//         : null;
-
-//       // Rekognition checks
-//       let documentVerified = false;
-//       let documentExtractedName = "";
-//       let faceMatch = false;
-
-//       if (idBuffer) {
-//         const textLines = await extractIdText(idBuffer);
-//         documentExtractedName = textLines.join(" ");
-//         documentVerified = textLines.some(line =>
-//           fullName.toLowerCase().includes(line.toLowerCase())
-//         );
-//       }
-
-//       if (idBuffer && selfieBuffer) {
-//         faceMatch = await compareFaces(selfieBuffer, idBuffer);
-//       }
-        
-//       // Save request
-//       // const newRequest = existing
-//       //   ? Object.assign(existing, { fullName, email, phoneNumber, documentType, documentUrl, selfieUrl, status: "pending" })
-//       //   : new KYCRequest({ walletAddress, fullName, email, phoneNumber, documentType, documentUrl, selfieUrl });
-//       const phoneNumberNormalized = normalizePhoneNumber(phoneNumber);
-
-// // Save request
-// const newRequest = existing
-//   ? Object.assign(existing, { fullName, email, phoneNumber: phoneNumberNormalized, documentType, documentUrl, selfieUrl, status: "pending" })
-//   : new KYCRequest({ walletAddress, fullName, email, phoneNumber: phoneNumberNormalized, documentType, documentUrl, selfieUrl });
-
-
-//       await newRequest.save();
-
-
-//       // Save verification result
-//       let verification = await KYCVerification.findOne({ requestId: newRequest._id });
-//       if (!verification) {
-//         verification = new KYCVerification({
-//           requestId: newRequest._id,
-//           livenessScore: 0,
-//           documentExtractedName,
-//           documentVerified,
-//           faceMatch,
-//         });
-//       } else {
-//         verification.documentExtractedName = documentExtractedName;
-//         verification.documentVerified = documentVerified;
-//         verification.faceMatch = faceMatch;
-//       }
-//       await verification.save();
-
-//       return res.json({
-//         success: true,
-//         message: "KYC request submitted and verification processed.",
-//         request: newRequest,
-//         verification,
-//       });
-
-//     } catch (error) {
-//       console.error("uploadKYC error:", error);
-//       if (req.files) Object.values(req.files).flat().forEach(f => safeUnlink(f.path));
-//       return res.status(500).json({ error: error.message || "Server error" });
-//     }
-//   },
-// ];
 
 exports.approveKYC = async (req, res) => {
   try {
@@ -295,9 +191,7 @@ exports.rejectKYC = async (req, res) => {
   }
 };
 
-/**
- * List all KYC requests
- */
+
 exports.listRequests = async (req, res) => {
   try {
     const list = await KYCRequest.find().sort({ createdAt: -1 }).limit(200);
@@ -323,10 +217,7 @@ exports.getRequestByWallet = async (req, res) => {
   }
 };
 
-/**
- * Verification CRUD
- */
-// Update verification (admin or automated system)
+
 exports.updateVerification = async (req, res) => {
   try {
     const { id } = req.params;
@@ -345,7 +236,6 @@ exports.updateVerification = async (req, res) => {
   }
 };
 
-// Get verification by KYC request ID
 exports.getVerificationByRequest = async (req, res) => {
   try {
     const { requestId } = req.params;
@@ -359,7 +249,7 @@ exports.getVerificationByRequest = async (req, res) => {
   }
 };
 
-// List all verification records
+
 exports.listVerifications = async (req, res) => {
   try {
     const verifications = await KYCVerification.find().populate(
@@ -371,6 +261,18 @@ exports.listVerifications = async (req, res) => {
   }
 };
 
+exports.getApprovedUsers = async (req, res) => {
+  try {
+    const approvedUsers = await KYCRequest.find({ status: "approved" })
+      .select("walletAddress fullName email phoneNumber")
+      .sort({ fullName: 1 });
+
+    res.json(approvedUsers);
+  } catch (error) {
+    console.error("getApprovedUsers error:", error);
+    res.status(500).json({ error: "Failed to fetch approved users" });
+  }
+};
 
 
 

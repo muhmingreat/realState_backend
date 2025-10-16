@@ -3,39 +3,11 @@ const { ethers } = require("ethers");
 const nodemailer = require("nodemailer");
 const RealEstateABI = require("../abis/RealEstate.json");
 const KYCRequest = require("../models/KYCRequest.js");
+const {sendEmail}  = require('../utils/email')
 require("dotenv").config();
 
 const WebSocket = require("ws"); // npm install ws
 
-// ✅ Setup Email Transporter
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-/**
- * Send email helper
- */
-async function sendEmail(to, subject, text) {
-  try {
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to,
-      subject,
-      text,
-    });
-    console.log(`📧 Email sent to ${to}: ${subject}`);
-  } catch (error) {
-    console.error("❌ Error sending email:", error.message);
-  }
-}
-
-/**
- * Initialize WebSocket provider to listen for contract events
- */
 function initWebSocket() {
   console.log("🔌 Connecting to Alchemy WebSocket...");
 
@@ -59,45 +31,54 @@ function initWebSocket() {
   console.log("📡 Listening for RealEstate contract events...");
 
   // ✅ Event: PropertyListed
-  realEstate.on("PropertyListed", async (id, owner, price) => {
-    console.log(`🏠 PropertyListed - ID: ${id}, Owner: ${owner}, Price: ${ethers.formatEther(price)} ETH`);
+  realEstate.on("PropertyListed", async (id, owner, propertyTitle, propertyAddress, price) => {
+    console.log(`🏠 PropertyListed  ID ${id}, Owner: ${owner}, Price: 
+     ${propertyAddress} has been listed for ${Number(ethers.formatEther(price)).toFixed(2)} celo`);
 
     const kyc = await KYCRequest.findOne({ walletAddress: owner.toLowerCase() });
     if (kyc) {
       sendEmail(
         kyc.email,
         "Property Listed",
-        `Your property (ID: ${id}) has been listed for ${ethers.formatEther(price)} ETH.`
+        `Your property ID ${id}  with this Title ${ propertyTitle},
+         located at ${propertyAddress} has been listed for ${Number(ethers.formatEther(price)).toFixed(2)} celo.`
       );
     }
   });
 
   // ✅ Event: PaymentDeposited
   realEstate.on("PaymentDeposited", async (id, buyer, amount) => {
-    console.log(`💰 PaymentDeposited - ID: ${id}, Buyer: ${buyer}, Amount: ${ethers.formatEther(amount)} ETH`);
+    console.log(`💰 PaymentDeposited ID ${id}, Buyer ${buyer}, 
+      Amount: ${Number(ethers.formatEther(amount)).toFixed(2)} celo`);
 
     const kyc = await KYCRequest.findOne({ walletAddress: buyer.toLowerCase() });
     if (kyc) {
       sendEmail(
         kyc.email,
         "Payment Deposited",
-        `Your payment of ${ethers.formatEther(amount)} celo for property ID ${id} has been deposited successfully.`
+        `Your payment of ${Number(ethers.formatEther(price)).toFixed(2)} 
+        celo for property ID ${id} has been deposited successfully.`
       );
     }
   });
 
   // ✅ Event: PropertySold
-  realEstate.on("PropertySold", async (id, oldOwner, newOwner, price) => {
-    console.log(`🔑 PropertySold - ID: ${id}, OldOwner: ${oldOwner}, NewOwner: ${newOwner}, Price: ${ethers.formatEther(price)} ETH`);
+  realEstate.on("PropertySold", async (id, oldOwner, propertyTitle, propertyAddress, newOwner, price) => {
+
+    console.log(`🔑 PropertySold  ID ${id}, OldOwner: ${oldOwner}, NewOwner: ${newOwner}, Price: 
+      ${Number(ethers.formatEther(price)).toFixed(2)} celo`);
 
     const oldOwnerKyc = await KYCRequest.findOne({ walletAddress: oldOwner.toLowerCase() });
     const newOwnerKyc = await KYCRequest.findOne({ walletAddress: newOwner.toLowerCase() });
 
     if (oldOwnerKyc) {
-      sendEmail(oldOwnerKyc.email, "Property Sold", `Your property (ID: ${id}) was sold for ${ethers.formatEther(price)} ETH.`);
+      sendEmail(oldOwnerKyc.email, "Property Sold", `this property ID: ${id} located at
+         ${propertyAddress} was sold for ${Number(ethers.formatEther(price)).toFixed(2)} celo.`);
     }
     if (newOwnerKyc) {
-      sendEmail(newOwnerKyc.email, "Purchase Confirmed", `You are now the owner of property (ID: ${id}), purchased for ${ethers.formatEther(price)} ETH.`);
+      sendEmail(newOwnerKyc.email, "Purchase Confirmed", `You are now the owner of property 
+         ${propertyTitle}, located at ${propertyAddress} purchased for
+         ${Number(ethers.formatEther(price)).toFixed(2)} celo.`);
     }
   });
 
@@ -126,8 +107,8 @@ function initWebSocket() {
   });
 }
 
-// Export function so server.js can call it
-exports.paymentController = () => {
+
+exports.eventController = () => {
   initWebSocket();
 };
 
